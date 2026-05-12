@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { GA } from '@/lib/analytics';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 export default function CollectScene() {
   const { shreds, addShredToTrash, shredsInTrash, isTrashFull } = useAppStore();
+
+  useEffect(() => { GA.sceneCollect(); }, []);
   const [trashGlow, setTrashGlow] = useState(false);
   const trashRef = useRef<HTMLDivElement>(null);
   const { play } = useSoundEffects();
@@ -21,6 +24,7 @@ export default function CollectScene() {
     if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
       addShredToTrash(shredId);
       play('drop');
+      GA.clickDragShred();
       setTrashGlow(true);
       setTimeout(() => setTrashGlow(false), 400);
     }

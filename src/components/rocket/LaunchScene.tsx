@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { GA } from '@/lib/analytics';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 export default function LaunchScene() {
   const { setScene } = useAppStore();
+
+  useEffect(() => { GA.sceneLaunch(); }, []);
   const [rocketGlow, setRocketGlow] = useState(false);
   const [trashOnRocket, setTrashOnRocket] = useState(false);
   const [launched, setLaunched] = useState(false);
@@ -22,12 +25,15 @@ export default function LaunchScene() {
       setTrashOnRocket(true);
       setRocketGlow(true);
       play('complete');
+      GA.clickDragTrash();
       setTimeout(() => setRocketGlow(false), 600);
     }
   }
 
   function handleLaunch() {
     if (!trashOnRocket) return;
+    GA.clickLaunchBtn();
+    GA.sceneFly();
     setLaunched(true);
     setLaunchPhase('rumble');
     setTimeout(() => {

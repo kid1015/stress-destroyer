@@ -3,6 +3,7 @@
 import { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { GA } from '@/lib/analytics';
 
 export default function WriteScene() {
   const { text, setText, startShred } = useAppStore();
@@ -10,10 +11,12 @@ export default function WriteScene() {
 
   useEffect(() => {
     textareaRef.current?.focus();
+    GA.sceneWrite();
   }, []);
 
   const handleShred = () => {
     if (!text.trim()) return;
+    GA.clickShredBtn();
     startShred();
   };
 

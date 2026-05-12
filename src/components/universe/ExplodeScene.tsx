@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { GA } from '@/lib/analytics';
 import confetti from 'canvas-confetti';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 
@@ -22,6 +23,7 @@ export default function ExplodeScene() {
   const { play } = useSoundEffects();
 
   useEffect(() => {
+    GA.sceneExplode();
     const t1 = setTimeout(() => setPhase('flying'), 2200);
     const t2 = setTimeout(() => {
       setPhase('explode');
@@ -129,7 +131,7 @@ export default function ExplodeScene() {
               </div>
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
                 className="flex flex-col items-center gap-3 w-full">
-                <button onClick={reset} className="btn-neon w-full text-white"
+                <button onClick={() => { GA.clickRetryBtn(); reset(); }} className="btn-neon w-full text-white"
                   style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 32px rgba(179,71,255,0.4)' }}>
                   또 날려버리기 🚀
                 </button>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { GA } from '@/lib/analytics';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 export default function ShredScene() {
@@ -12,6 +13,7 @@ export default function ShredScene() {
   const { play, stop } = useSoundEffects();
 
   useEffect(() => {
+    GA.sceneShred();
     const t1 = setTimeout(() => {
       setPhase('shredding');
       play('shred');
