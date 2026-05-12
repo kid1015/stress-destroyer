@@ -10,8 +10,8 @@ function generateShreds(text: string): PaperShred[] {
     x: 40 + Math.random() * 20,
     y: 50 + Math.random() * 10,
     rotation: Math.random() * 360,
-    width: 8 + Math.random() * 16,
-    height: 2 + Math.random() * 4,
+    width: 28 + Math.random() * 24,
+    height: 10 + Math.random() * 8,
     color: colors[Math.floor(Math.random() * colors.length)],
     inTrash: false,
   }));
