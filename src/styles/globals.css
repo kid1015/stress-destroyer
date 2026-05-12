@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Pretendard:wght@300;400;500;600;700&family=Caveat:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Pretendard', sans-serif;
+  --font-handwrite: 'Caveat', cursive;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: #06060a;
+  color: #fafaf7;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  cursor: default;
+  user-select: none;
+}
+
+/* 별 배경 */
+.star-field {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 종이 줄 효과 */
+.paper-lines {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 31px,
+    #e8e4dc 31px,
+    #e8e4dc 32px
+  );
+}
+
+/* 네온 텍스트 */
+.neon-text-pink {
+  color: #ff2d78;
+  text-shadow: 0 0 10px rgba(255, 45, 120, 0.8), 0 0 40px rgba(255, 45, 120, 0.4);
+}
+.neon-text-purple {
+  color: #b347ff;
+  text-shadow: 0 0 10px rgba(179, 71, 255, 0.8), 0 0 40px rgba(179, 71, 255, 0.4);
+}
+.neon-text-mint {
+  color: #00e5b0;
+  text-shadow: 0 0 10px rgba(0, 229, 176, 0.8), 0 0 40px rgba(0, 229, 176, 0.4);
+}
+
+/* 드래그 가능한 요소 */
+.draggable {
+  cursor: grab;
+}
+.draggable:active {
+  cursor: grabbing;
+}
+
+/* 드롭존 활성화 */
+.dropzone-active {
+  border-color: #b347ff !important;
+  box-shadow: 0 0 30px rgba(179, 71, 255, 0.4);
+}
+
+/* 스크롤바 */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2a45; border-radius: 99px; }
+
+/* textarea 스타일 리셋 */
+textarea {
+  resize: none;
+  outline: none;
+  border: none;
+  background: transparent;
+  font-family: var(--font-handwrite);
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-surface/60 backdrop-blur-xl border border-white/10 rounded-3xl;
+  }
+
+  .btn-neon {
+    @apply px-8 py-4 rounded-2xl font-display font-semibold text-sm tracking-wide
+           transition-all duration-200 active:scale-95;
+  }
+
+  .scene-container {
+    @apply relative min-h-screen flex flex-col items-center justify-center overflow-hidden;
+  }
+}
