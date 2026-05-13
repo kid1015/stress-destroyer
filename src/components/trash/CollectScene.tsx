@@ -8,8 +8,8 @@ import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 export default function CollectScene() {
   const { shreds, addShredToTrash, shredsInTrash, isTrashFull } = useAppStore();
-
   useEffect(() => { GA.sceneCollect(); }, []);
+
   const [trashGlow, setTrashGlow] = useState(false);
   const trashRef = useRef<HTMLDivElement>(null);
   const { play } = useSoundEffects();
@@ -21,7 +21,14 @@ export default function CollectScene() {
     if (!trashRef.current) return;
     const rect = trashRef.current.getBoundingClientRect();
     const { x, y } = info.point;
-    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+    // 드롭존을 넉넉하게 확장 (상하좌우 40px 여유)
+    const padding = 40;
+    if (
+      x >= rect.left - padding &&
+      x <= rect.right + padding &&
+      y >= rect.top - padding &&
+      y <= rect.bottom + padding
+    ) {
       addShredToTrash(shredId);
       play('drop');
       GA.clickDragShred();
@@ -66,14 +73,15 @@ export default function CollectScene() {
               <motion.div
                 key={shred.id}
                 drag
-                dragConstraints={{ left: -200, right: 200, top: -100, bottom: 100 }}
+                dragConstraints={{ left: -200, right: 200, top: -100, bottom: 200 }}
+                dragElastic={0.2}
                 onDragEnd={(_, info) => handleDragEnd(shred.id, info)}
-                whileDrag={{ scale: 1.2, zIndex: 50 }}
+                whileDrag={{ scale: 1.3, zIndex: 50 }}
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0 }}
                 transition={{ delay: i * 0.02 }}
-                className="absolute draggable"
+                className="absolute"
                 style={{
                   left: `${15 + (i % 10) * 8}%`,
                   top: `${30 + Math.floor(i / 10) * 30}%`,
@@ -81,9 +89,10 @@ export default function CollectScene() {
                   height: shred.height,
                   background: shred.color,
                   rotate: shred.rotation,
-                  borderRadius: '1px',
+                  borderRadius: '2px',
                   cursor: 'grab',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                  touchAction: 'none',
                 }}
               />
             ))}
@@ -106,21 +115,24 @@ export default function CollectScene() {
               ? '0 0 30px rgba(0, 229, 176, 0.5)'
               : '0 0 0px transparent',
           }}
-          className="glass-card p-6 flex flex-col items-center gap-3 w-40 border-2 border-dashed border-white/20"
-          style={{ borderColor: trashGlow ? '#b347ff' : undefined }}
+          className="glass-card p-8 flex flex-col items-center gap-3 border-2 border-dashed border-white/20"
+          style={{
+            minWidth: '160px',
+            borderColor: trashGlow ? '#b347ff' : undefined,
+          }}
         >
           <motion.div
             animate={{ scale: trashGlow ? [1, 1.3, 1] : 1 }}
             transition={{ duration: 0.3 }}
-            className="text-5xl"
+            className="text-6xl"
           >
             {isTrashFull ? '🗑️' : '🗑'}
           </motion.div>
-          <p className="text-white/50 text-xs font-mono text-center">
+          <p className="text-white/50 text-sm font-mono text-center">
             {isTrashFull ? `${shredsInTrash}개 수거` : '여기에 드래그'}
           </p>
           {shredsInTrash > 0 && (
-            <div className="flex flex-wrap gap-0.5 justify-center max-w-20">
+            <div className="flex flex-wrap gap-0.5 justify-center max-w-24">
               {Array.from({ length: Math.min(shredsInTrash, 12) }).map((_, i) => (
                 <div key={i} className="w-2 h-0.5 bg-white/30 rounded-full" />
               ))}
@@ -128,7 +140,6 @@ export default function CollectScene() {
           )}
         </motion.div>
 
-        {/* 다음 안내 */}
         <AnimatePresence>
           {isTrashFull && (
             <motion.div
