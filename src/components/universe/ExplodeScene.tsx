@@ -19,7 +19,7 @@ interface Particle {
 const EMOJIS = ['✨', '⭐', '🌟', '💫', '🎆', '🎇', '🌈', '💜', '💙', '🩷', '🌸', '🎉'];
 
 export default function ExplodeScene() {
-  const { reset } = useAppStore();
+  const { reset, setScene } = useAppStore();
   const supabase = createClient();
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('ascend');
@@ -152,7 +152,7 @@ export default function ExplodeScene() {
                   style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 32px rgba(179,71,255,0.4)' }}>
                   또 날려버리기 🚀
                 </button>
-                <button onClick={() => router.push('/universe')}
+                <button onClick={() => { setScene('celebrate' as any); router.push('/universe'); }}
                   className="w-full py-3 rounded-2xl font-display font-semibold text-white/70 border border-white/10 hover:border-white/30 transition-all active:scale-95 text-sm">
                   🌌 내 우주 보러가기
                 </button>

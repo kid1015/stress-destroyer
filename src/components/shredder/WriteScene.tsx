@@ -88,7 +88,7 @@ export default function WriteScene() {
                 style={{
                   fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif',
                   fontSize: '17px',
-                  minHeight: '260px',
+                  minHeight: '180px',
                   lineHeight: '1.6',
                   background: 'transparent',
                   color: '#1c1c1e',
@@ -141,8 +141,14 @@ export default function WriteScene() {
         </p>
 
         <button onClick={() => router.push('/universe')}
-          className="text-white/20 text-xs font-mono hover:text-white/50 transition-colors">
+          className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white/80 transition-all active:scale-95 border border-white/20 hover:border-white/40 hover:bg-white/5"
+          style={{ backdropFilter: 'blur(10px)' }}>
           🌌 내 우주 보러가기
+        </button>
+        <button onClick={() => router.push('/auth/login')}
+          className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white transition-all active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 20px rgba(179,71,255,0.3)' }}>
+          🔐 로그인 / 회원가입
         </button>
         <p className="text-white/15 text-xs font-mono text-center">
           © 2026 박수민. All rights reserved.

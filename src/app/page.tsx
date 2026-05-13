@@ -18,7 +18,8 @@ export default function Home() {
       case 'collect': return <CollectScene />;
       case 'launch': return <LaunchScene />;
       case 'fly':
-      case 'explode': return <ExplodeScene />;
+      case 'explode':
+      case 'celebrate': return <ExplodeScene />;
       default: return <WriteScene />;
     }
   };
