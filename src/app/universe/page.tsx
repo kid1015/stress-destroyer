@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
@@ -16,14 +16,48 @@ interface Star {
 
 const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
-// 별 위치를 우주 느낌으로 랜덤 배치 (시드 기반으로 고정)
-function getStarPosition(day: number, seed: number) {
-  const hash = (day * 137 + seed * 31) % 1000;
-  const angle = (hash / 1000) * Math.PI * 2;
-  const radius = 25 + ((day * seed * 7) % 100) * 0.45;
+// 우주 성장 단계
+function getUniverseLevel(total: number) {
+  if (total >= 20) return { level: 4, name: '풀 갤럭시', emoji: '🎆' };
+  if (total >= 13) return { level: 3, name: '은하수 형성', emoji: '💫' };
+  if (total >= 7)  return { level: 2, name: '성운 등장', emoji: '🌌' };
+  if (total >= 3)  return { level: 1, name: '별이 생기기 시작', emoji: '🌟' };
+  return { level: 0, name: '텅 빈 우주', emoji: '🌑' };
+}
+
+// 스트릭 계산
+function getStreak(stars: Star[]) {
+  if (stars.length === 0) return 0;
+  const dates = [...new Set(stars.map(s => `${s.year}-${String(s.month).padStart(2,'0')}-${String(s.day).padStart(2,'0')}`))].sort().reverse();
+  const today = new Date();
+  let streak = 0;
+  for (let i = 0; i < dates.length; i++) {
+    const d = new Date(dates[i]);
+    const diff = Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === i || (i === 0 && diff <= 1)) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// 별 색상 (스트릭에 따라)
+function getStarColor(streak: number, idx: number) {
+  if (streak >= 7) {
+    const rainbow = ['#ff2d78','#ff6b2d','#ffe033','#00e5b0','#3d9eff','#b347ff'];
+    return rainbow[idx % rainbow.length];
+  }
+  if (streak >= 3) return '#ffd700';
+  const colors = ['#ffffff','#b347ff','#3d9eff','#00e5b0','#ffe033','#ff2d78','#c8a0ff'];
+  return colors[idx % colors.length];
+}
+
+// 별 위치 (우주 느낌)
+function getStarPos(day: number, month: number, idx: number) {
+  const angle = (idx / 20) * Math.PI * 2 + (day * 0.7);
+  const r = 18 + (idx % 5) * 8 + (day % 4) * 3;
   return {
-    x: 50 + Math.cos(angle) * radius * 0.6,
-    y: 50 + Math.sin(angle) * radius * 0.5,
+    x: 50 + Math.cos(angle) * r * 1.1,
+    y: 50 + Math.sin(angle) * r * 0.75,
   };
 }
 
@@ -42,11 +76,7 @@ export default function UniversePage() {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/auth/login'); return; }
-      const { data } = await supabase
-        .from('stars')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
+      const { data } = await supabase.from('stars').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
       if (data) setStars(data);
       setLoading(false);
     }
@@ -55,6 +85,8 @@ export default function UniversePage() {
 
   const starsThisMonth = stars.filter(s => s.year === viewYear && s.month === viewMonth);
   const totalStars = stars.length;
+  const universe = getUniverseLevel(totalStars);
+  const streak = getStreak(stars);
 
   function prevMonth() {
     if (viewMonth === 1) { setViewYear(v => v - 1); setViewMonth(12); }
@@ -66,115 +98,97 @@ export default function UniversePage() {
   }
 
   function handleBack() {
-    setScene('explode');
+    setScene('celebrate' as any);
     router.push('/');
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-void-950 flex items-center justify-center">
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="text-4xl">🌟</motion.div>
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }} className="text-4xl">🌟</motion.div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-void-950 overflow-hidden relative">
-      {/* 배경 별 */}
-      <BackgroundStars />
+      <BackgroundStars level={universe.level} />
 
-      {/* 성운 효과 */}
+      {/* 성운 — 레벨에 따라 진해짐 */}
       <div className="fixed inset-0 pointer-events-none">
-        <div style={{ position: 'absolute', top: '15%', right: '10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(179,71,255,0.06) 0%, transparent 70%)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '20%', left: '5%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(61,158,255,0.05) 0%, transparent 70%)', borderRadius: '50%' }} />
+        <motion.div animate={{ opacity: universe.level >= 2 ? 1 : 0 }} transition={{ duration: 2 }}
+          style={{ position: 'absolute', top: '10%', right: '8%', width: '320px', height: '320px', background: 'radial-gradient(circle, rgba(179,71,255,0.10) 0%, transparent 70%)', borderRadius: '50%' }} />
+        <motion.div animate={{ opacity: universe.level >= 2 ? 1 : 0 }} transition={{ duration: 2, delay: 0.5 }}
+          style={{ position: 'absolute', bottom: '15%', left: '5%', width: '240px', height: '240px', background: 'radial-gradient(circle, rgba(61,158,255,0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
+        {/* 은하수 — 레벨 3+ */}
+        {universe.level >= 3 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 3 }}
+            style={{ position: 'absolute', top: '30%', left: '0', right: '0', height: '2px', background: 'linear-gradient(90deg, transparent, rgba(179,71,255,0.15), rgba(61,158,255,0.2), rgba(0,229,176,0.15), transparent)', filter: 'blur(8px)' }} />
+        )}
+        {/* 별똥별 — 레벨 4 */}
+        {universe.level >= 4 && <ShootingStars />}
       </div>
 
       <div className="relative z-10 max-w-lg mx-auto px-4 py-8 flex flex-col min-h-screen">
         {/* 헤더 */}
-        <div className="flex items-center justify-between mb-6">
-          <button onClick={handleBack} className="text-white/40 hover:text-white transition-colors text-sm font-mono">
-            ← 돌아가기
-          </button>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={handleBack} className="text-white/40 hover:text-white transition-colors text-sm font-mono">← 돌아가기</button>
           <button onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
-            className="text-white/25 hover:text-white/50 transition-colors text-xs font-mono">
-            로그아웃
-          </button>
+            className="text-white/25 hover:text-white/50 transition-colors text-xs font-mono">로그아웃</button>
         </div>
 
-        {/* 타이틀 */}
-        <div className="text-center mb-6">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-3xl font-display font-bold text-white mb-1">나의 우주 🌌</h1>
-            <p className="text-white/40 text-sm font-body">
-              지금까지 <span style={{ color: '#b347ff' }}>{totalStars}개</span>의 고민을 날려버렸어
-            </p>
-          </motion.div>
-        </div>
+        {/* 우주 레벨 + 타이틀 */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-4">
+          <div className="text-4xl mb-2">{universe.emoji}</div>
+          <h1 className="text-2xl font-display font-bold text-white mb-1">나의 우주</h1>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <span className="text-xs font-mono px-3 py-1 rounded-full"
+              style={{ background: 'rgba(179,71,255,0.2)', color: '#b347ff', border: '1px solid rgba(179,71,255,0.3)' }}>
+              {universe.name}
+            </span>
+            <span className="text-white/40 text-xs font-mono">✦ {totalStars}개</span>
+            {streak > 0 && (
+              <span className="text-xs font-mono px-3 py-1 rounded-full"
+                style={{ background: streak >= 7 ? 'linear-gradient(135deg, rgba(255,45,120,0.2), rgba(179,71,255,0.2))' : streak >= 3 ? 'rgba(255,208,0,0.15)' : 'rgba(255,255,255,0.08)', color: streak >= 7 ? '#ff2d78' : streak >= 3 ? '#ffd700' : 'rgba(255,255,255,0.5)', border: `1px solid ${streak >= 7 ? 'rgba(255,45,120,0.3)' : streak >= 3 ? 'rgba(255,208,0,0.3)' : 'rgba(255,255,255,0.1)'}` }}>
+                🔥 {streak}일 연속
+              </span>
+            )}
+          </div>
+        </motion.div>
 
         {/* 월 네비게이션 */}
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={prevMonth}
-            className="w-10 h-10 flex items-center justify-center rounded-full glass-card text-white/50 hover:text-white transition-colors text-xl">
-            ‹
-          </button>
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={prevMonth} className="w-10 h-10 flex items-center justify-center rounded-full glass-card text-white/50 hover:text-white transition-colors text-xl">‹</button>
           <div className="text-center">
-            <h2 className="text-lg font-display font-bold text-white">
-              {viewYear}년 {MONTH_NAMES[viewMonth - 1]}
-            </h2>
-            <p className="text-xs font-mono text-white/30">
-              {starsThisMonth.length > 0 ? `✦ ${starsThisMonth.length}개의 별` : '이번 달 별이 없어'}
-            </p>
+            <h2 className="text-base font-display font-bold text-white">{viewYear}년 {MONTH_NAMES[viewMonth - 1]}</h2>
+            <p className="text-xs font-mono text-white/30">{starsThisMonth.length > 0 ? `✦ ${starsThisMonth.length}개의 별` : '이번 달 별이 없어'}</p>
           </div>
-          <button onClick={nextMonth}
-            className="w-10 h-10 flex items-center justify-center rounded-full glass-card text-white/50 hover:text-white transition-colors text-xl">
-            ›
-          </button>
+          <button onClick={nextMonth} className="w-10 h-10 flex items-center justify-center rounded-full glass-card text-white/50 hover:text-white transition-colors text-xl">›</button>
         </div>
 
-        {/* 우주 별 뷰 */}
-        <div className="relative flex-1 glass-card overflow-hidden"
-          style={{ minHeight: '340px', background: 'rgba(6,6,10,0.8)' }}>
-
-          {/* 우주 배경 점들 */}
-          {Array.from({ length: 30 }).map((_, i) => (
+        {/* 우주 뷰 */}
+        <div className="relative glass-card overflow-hidden" style={{ minHeight: '300px', background: 'rgba(4,4,10,0.9)' }}>
+          {/* 배경 작은 별 */}
+          {Array.from({ length: 25 }).map((_, i) => (
             <div key={i} className="absolute rounded-full bg-white"
-              style={{
-                width: Math.random() > 0.8 ? 2 : 1,
-                height: Math.random() > 0.8 ? 2 : 1,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                opacity: 0.1 + Math.random() * 0.2,
-              }} />
+              style={{ width: Math.random() > 0.8 ? 1.5 : 1, height: Math.random() > 0.8 ? 1.5 : 1, left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, opacity: 0.08 + Math.random() * 0.15 }} />
           ))}
 
           <AnimatePresence mode="wait">
-            <motion.div
-              key={`${viewYear}-${viewMonth}`}
-              className="absolute inset-0"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              transition={{ duration: 0.4 }}
-            >
+            <motion.div key={`${viewYear}-${viewMonth}`} className="absolute inset-0"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
               {starsThisMonth.length === 0 ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <div className="text-4xl opacity-30">🌑</div>
+                  <div className="text-4xl opacity-20">🌑</div>
                   <p className="text-white/20 text-sm font-body">이번 달엔 아직 별이 없어</p>
-                  <p className="text-white/15 text-xs font-mono">고민을 날려버리면 별이 생겨요</p>
+                  <p className="text-white/12 text-xs font-mono">고민을 날려버리면 별이 생겨요</p>
                 </div>
               ) : (
                 starsThisMonth.map((star, idx) => {
-                  const pos = getStarPosition(star.day, viewMonth * 100 + viewYear);
+                  const pos = getStarPos(star.day, star.month, idx);
+                  const color = getStarColor(streak, idx);
                   return (
-                    <StarDot
-                      key={star.id}
-                      star={star}
-                      x={pos.x}
-                      y={pos.y}
-                      idx={idx}
-                      onClick={() => setSelectedStar(star)}
-                    />
+                    <StarDot key={star.id} star={star} x={pos.x} y={pos.y} idx={idx} color={color} streak={streak} onClick={() => setSelectedStar(star)} />
                   );
                 })
               )}
@@ -182,50 +196,68 @@ export default function UniversePage() {
           </AnimatePresence>
         </div>
 
-        {/* 통계 */}
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          <div className="glass-card p-4 text-center">
-            <p className="text-2xl font-display font-bold text-white">{totalStars}</p>
-            <p className="text-xs font-mono text-white/40 mt-1">총 날려버린 고민</p>
+        {/* 성장 게이지 */}
+        <div className="mt-4 glass-card p-4 space-y-2">
+          <div className="flex justify-between text-xs font-mono">
+            <span className="text-white/40">우주 성장</span>
+            <span style={{ color: '#b347ff' }}>{universe.name}</span>
           </div>
-          <div className="glass-card p-4 text-center">
-            <p className="text-2xl font-display font-bold text-white">
-              {new Set(stars.map(s => `${s.year}-${s.month}`)).size}
-            </p>
-            <p className="text-xs font-mono text-white/40 mt-1">활동한 달</p>
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <motion.div className="h-full rounded-full"
+              style={{ background: 'linear-gradient(90deg, #b347ff, #3d9eff, #00e5b0)' }}
+              initial={{ width: '0%' }}
+              animate={{ width: `${Math.min(100, (totalStars / 20) * 100)}%` }}
+              transition={{ duration: 1.5, ease: 'easeOut' }} />
+          </div>
+          <div className="flex justify-between text-xs font-mono text-white/20">
+            <span>0</span>
+            <span>3</span>
+            <span>7</span>
+            <span>13</span>
+            <span>20+</span>
           </div>
         </div>
 
-        <p className="text-center text-white/10 text-xs font-mono mt-4">
-          © 2026 박수민. All rights reserved.
-        </p>
+        {/* 통계 */}
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="glass-card p-3 text-center">
+            <p className="text-xl font-display font-bold text-white">{totalStars}</p>
+            <p className="text-xs font-mono text-white/30 mt-0.5">총 별</p>
+          </div>
+          <div className="glass-card p-3 text-center">
+            <p className="text-xl font-display font-bold" style={{ color: streak >= 3 ? '#ffd700' : 'white' }}>{streak}</p>
+            <p className="text-xs font-mono text-white/30 mt-0.5">연속 일수</p>
+          </div>
+          <div className="glass-card p-3 text-center">
+            <p className="text-xl font-display font-bold text-white">
+              {new Set(stars.map(s => `${s.year}-${s.month}`)).size}
+            </p>
+            <p className="text-xs font-mono text-white/30 mt-0.5">활동한 달</p>
+          </div>
+        </div>
+
+        <p className="text-center text-white/10 text-xs font-mono mt-4">© 2026 박수민. All rights reserved.</p>
       </div>
 
-      {/* 별 클릭 팝업 */}
+      {/* 별 팝업 */}
       <AnimatePresence>
         {selectedStar && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center px-6"
-            style={{ background: 'rgba(0,0,0,0.7)' }}
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+            style={{ background: 'rgba(0,0,0,0.75)' }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setSelectedStar(null)}
-          >
-            <motion.div
-              className="glass-card p-6 text-center space-y-3 max-w-xs w-full"
+            onClick={() => setSelectedStar(null)}>
+            <motion.div className="glass-card p-6 text-center space-y-3 max-w-xs w-full"
               initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-            >
-              <motion.div
-                animate={{ scale: [1, 1.3, 1], rotate: [0, 20, -20, 0] }}
-                transition={{ duration: 1, repeat: Infinity }}
-                className="text-4xl"
-              >✦</motion.div>
+              onClick={e => e.stopPropagation()}>
+              <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 20, -20, 0] }}
+                transition={{ duration: 1, repeat: Infinity }} className="text-4xl">✦</motion.div>
               <p className="text-white font-display text-lg">
                 {selectedStar.year}년 {selectedStar.month}월 {selectedStar.day}일
               </p>
-              <p className="text-white/50 text-sm font-body">이날 고민을 우주로 날려버렸어 🚀</p>
-              <button onClick={() => setSelectedStar(null)}
-                className="text-white/30 text-xs font-mono hover:text-white transition-colors">닫기</button>
+              <p className="text-white/50 text-sm font-body">
+                {getEncouragement()}
+              </p>
+              <button onClick={() => setSelectedStar(null)} className="text-white/30 text-xs font-mono hover:text-white transition-colors">닫기</button>
             </motion.div>
           </motion.div>
         )}
@@ -234,56 +266,59 @@ export default function UniversePage() {
   );
 }
 
+// 응원 메시지
+const ENCOURAGEMENTS = [
+  "그 고민은 이제 우주 먼지야 ✨",
+  "날려버린 만큼 가벼워졌을 거야 💜",
+  "오늘도 잘 버텼어 🚀",
+  "버려야 할 건 버릴 줄 아는 사람이야",
+  "이날의 나, 진짜 잘했다",
+  "우주가 네 고민을 가져갔어 🌌",
+  "그거 없어도 잘 살 수 있어",
+  "날린 만큼 빈 자리에 좋은 것들이 채워질 거야",
+];
+function getEncouragement() {
+  return ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
+}
+
 // 별 컴포넌트
-function StarDot({ star, x, y, idx, onClick }: {
-  star: Star; x: number; y: number; idx: number; onClick: () => void;
+function StarDot({ star, x, y, idx, color, streak, onClick }: {
+  star: Star; x: number; y: number; idx: number; color: string; streak: number; onClick: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const colors = ['#ffffff', '#b347ff', '#3d9eff', '#00e5b0', '#ffe033', '#ff2d78'];
-  const color = colors[idx % colors.length];
 
   return (
-    <motion.button
-      onClick={onClick}
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
+    <motion.button onClick={onClick}
+      onHoverStart={() => setHovered(true)} onHoverEnd={() => setHovered(false)}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay: idx * 0.08, type: 'spring', stiffness: 200 }}
+      transition={{ delay: idx * 0.1, type: 'spring', stiffness: 200 }}
       className="absolute flex items-center justify-center"
-      style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-    >
-      {/* 별빛 글로우 */}
-      <motion.div
-        className="absolute rounded-full"
+      style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}>
+      {/* 글로우 */}
+      <motion.div className="absolute rounded-full"
         animate={hovered
-          ? { scale: [1, 1.8, 1.4], opacity: [0.3, 0.6, 0.4] }
-          : { scale: [1, 1.2, 1], opacity: [0.15, 0.3, 0.15] }
+          ? { scale: [1, 2.2, 1.8], opacity: [0.4, 0.7, 0.5] }
+          : { scale: [1, 1.3, 1], opacity: [0.15, 0.35, 0.15] }
         }
-        transition={{ duration: hovered ? 0.6 : 2 + idx * 0.3, repeat: Infinity }}
-        style={{ width: 24, height: 24, background: color, filter: 'blur(6px)' }}
-      />
-      {/* 별 본체 */}
+        transition={{ duration: hovered ? 0.5 : 2 + idx * 0.3, repeat: Infinity }}
+        style={{ width: 28, height: 28, background: color, filter: 'blur(7px)' }} />
+      {/* 본체 */}
       <motion.div
         animate={hovered
-          ? { scale: [1, 1.6, 1.3, 1.5], rotate: [0, 30, -30, 0] }
+          ? { scale: [1, 1.8, 1.5, 1.7], rotate: [0, 40, -40, 0] }
           : { scale: [1, 1.15, 1] }
         }
-        transition={{ duration: hovered ? 0.5 : 2 + idx * 0.4, repeat: Infinity }}
-        className="relative z-10 text-base select-none"
-        style={{ color, textShadow: `0 0 8px ${color}, 0 0 20px ${color}` }}
-      >
-        ✦
+        transition={{ duration: hovered ? 0.4 : 2.5 + idx * 0.4, repeat: Infinity }}
+        className="relative z-10 text-lg select-none"
+        style={{ color, textShadow: `0 0 10px ${color}, 0 0 25px ${color}` }}>
+        {streak >= 7 ? '★' : streak >= 3 ? '✦' : '·'}
       </motion.div>
-      {/* 호버 시 날짜 표시 */}
+      {/* 호버 날짜 */}
       <AnimatePresence>
         {hovered && (
-          <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            className="absolute -bottom-6 whitespace-nowrap text-xs font-mono text-white/70 pointer-events-none"
-          >
+          <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="absolute -bottom-7 whitespace-nowrap text-xs font-mono text-white/60 pointer-events-none bg-black/50 px-2 py-0.5 rounded-full">
             {star.month}/{star.day}
           </motion.div>
         )}
@@ -292,19 +327,38 @@ function StarDot({ star, x, y, idx, onClick }: {
   );
 }
 
-function BackgroundStars() {
-  const stars = Array.from({ length: 80 }, (_, i) => ({
+// 배경 별 (레벨에 따라 많아짐)
+function BackgroundStars({ level }: { level: number }) {
+  const count = 40 + level * 25;
+  const stars = useMemo(() => Array.from({ length: count }, (_, i) => ({
     id: i, x: Math.random() * 100, y: Math.random() * 100,
-    size: Math.random() * 1.5 + 0.3, delay: Math.random() * 4,
-  }));
+    size: Math.random() * 1.8 + 0.3, delay: Math.random() * 5,
+    duration: 2 + Math.random() * 4,
+  })), [count]);
+
   return (
     <div className="fixed inset-0 pointer-events-none">
       {stars.map((s) => (
         <motion.div key={s.id} className="absolute rounded-full bg-white"
           style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.size, height: s.size }}
           animate={{ opacity: [0.05, 0.4, 0.05] }}
-          transition={{ duration: 2 + Math.random() * 3, delay: s.delay, repeat: Infinity }} />
+          transition={{ duration: s.duration, delay: s.delay, repeat: Infinity }} />
       ))}
     </div>
+  );
+}
+
+// 별똥별 (레벨 4)
+function ShootingStars() {
+  return (
+    <>
+      {[0, 1, 2].map((i) => (
+        <motion.div key={i}
+          className="absolute h-px rounded-full"
+          style={{ width: '80px', background: 'linear-gradient(90deg, transparent, white)', top: `${15 + i * 20}%`, left: '-80px' }}
+          animate={{ x: ['0vw', '120vw'], opacity: [0, 1, 0] }}
+          transition={{ duration: 1.5, delay: i * 3 + Math.random() * 2, repeat: Infinity, repeatDelay: 6 + i * 2 }} />
+      ))}
+    </>
   );
 }

@@ -1,14 +1,28 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { GA } from '@/lib/analytics';
+import { createClient } from '@/lib/supabase/client';
 
 export default function WriteScene() {
   const { text, setText, startShred } = useAppStore();
   const router = useRouter();
+  const supabase = createClient();
+  const [userInfo, setUserInfo] = useState<{ email: string; starCount: number } | null>(null);
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { count } = await supabase.from('stars').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
+        setUserInfo({ email: user.email || '', starCount: count || 0 });
+      }
+    }
+    fetchUser();
+  }, []);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -140,16 +154,19 @@ export default function WriteScene() {
           적은 내용은 파쇄 후 우주로 사라져요 🚀
         </p>
 
-        <button onClick={() => router.push('/universe')}
-          className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white/80 transition-all active:scale-95 border border-white/20 hover:border-white/40 hover:bg-white/5"
-          style={{ backdropFilter: 'blur(10px)' }}>
-          🌌 내 우주 보러가기
-        </button>
-        <button onClick={() => router.push('/auth/login')}
-          className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white transition-all active:scale-95"
-          style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 20px rgba(179,71,255,0.3)' }}>
-          🔐 로그인 / 회원가입
-        </button>
+        {userInfo ? (
+          <button onClick={() => router.push('/universe')}
+            className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 20px rgba(179,71,255,0.3)' }}>
+            🌌 내 우주 보러가기 · ✦ {userInfo.starCount}개
+          </button>
+        ) : (
+          <button onClick={() => router.push('/auth/login')}
+            className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white transition-all active:scale-95"
+            style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 20px rgba(179,71,255,0.3)' }}>
+            🔐 로그인하고 내 우주 만들기
+          </button>
+        )}
         <p className="text-white/15 text-xs font-mono text-center">
           © 2026 박수민. All rights reserved.
         </p>
