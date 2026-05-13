@@ -137,6 +137,10 @@ export default function WriteScene() {
         <p className="text-white/20 text-xs font-body text-center">
           적은 내용은 파쇄 후 우주로 사라져요 🚀
         </p>
+
+        <p className="text-white/15 text-xs font-mono text-center">
+          © 2026 박수민. All rights reserved.
+        </p>
       </div>
     </div>
   );

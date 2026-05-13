@@ -136,6 +136,7 @@ export default function ExplodeScene() {
                   또 날려버리기 🚀
                 </button>
                 <p className="text-white/25 text-xs font-body">오늘도 잘 버텼어 👏</p>
+                <p className="text-white/15 text-xs font-mono mt-1">© 2026 박수민. All rights reserved.</p>
               </motion.div>
             </motion.div>
           </motion.div>
