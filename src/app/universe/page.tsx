@@ -28,7 +28,8 @@ function getUniverseLevel(total: number) {
 // 스트릭 계산
 function getStreak(stars: Star[]) {
   if (stars.length === 0) return 0;
-  const dates = [...new Set(stars.map(s => `${s.year}-${String(s.month).padStart(2,'0')}-${String(s.day).padStart(2,'0')}`))].sort().reverse();
+  const uniqueDates = Array.from(new Set(stars.map(s => `${s.year}-${String(s.month).padStart(2,'0')}-${String(s.day).padStart(2,'0')}`))).sort().reverse();
+  const dates = uniqueDates;
   const today = new Date();
   let streak = 0;
   for (let i = 0; i < dates.length; i++) {
