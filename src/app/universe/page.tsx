@@ -99,7 +99,7 @@ export default function UniversePage() {
   }
 
   function handleBack() {
-    setScene('celebrate' as any);
+    setScene('write');
     router.push('/');
   }
 
@@ -207,15 +207,15 @@ export default function UniversePage() {
             <motion.div className="h-full rounded-full"
               style={{ background: 'linear-gradient(90deg, #b347ff, #3d9eff, #00e5b0)' }}
               initial={{ width: '0%' }}
-              animate={{ width: `${Math.min(100, (totalStars / 20) * 100)}%` }}
+              animate={{ width: `${Math.min(100, totalStars >= 20 ? 100 : totalStars >= 13 ? 65 + ((totalStars - 13) / 7) * 35 : totalStars >= 7 ? 35 + ((totalStars - 7) / 6) * 30 : totalStars >= 3 ? 15 + ((totalStars - 3) / 4) * 20 : (totalStars / 3) * 15)}%` }}
               transition={{ duration: 1.5, ease: 'easeOut' }} />
           </div>
           <div className="flex justify-between text-xs font-mono text-white/20">
-            <span>0</span>
-            <span>3</span>
-            <span>7</span>
-            <span>13</span>
-            <span>20+</span>
+            <span>0개</span>
+            <span>3개</span>
+            <span>7개</span>
+            <span>13개</span>
+            <span>20개+</span>
           </div>
         </div>
 
