@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 import { GA } from '@/lib/analytics';
 import confetti from 'canvas-confetti';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -18,6 +20,8 @@ const EMOJIS = ['✨', '⭐', '🌟', '💫', '🎆', '🎇', '🌈', '💜', '�
 
 export default function ExplodeScene() {
   const { reset } = useAppStore();
+  const supabase = createClient();
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>('ascend');
   const [particles, setParticles] = useState<Particle[]>([]);
   const { play } = useSoundEffects();
@@ -31,7 +35,20 @@ export default function ExplodeScene() {
       triggerConfetti();
       spawnParticles();
     }, 4200);
-    const t3 = setTimeout(() => setPhase('celebrate'), 5200);
+    const t3 = setTimeout(async () => {
+      setPhase('celebrate');
+      // 별 저장
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const now = new Date();
+        await supabase.from('stars').insert({
+          user_id: user.id,
+          year: now.getFullYear(),
+          month: now.getMonth() + 1,
+          day: now.getDate(),
+        });
+      }
+    }, 5200);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [play]);
 
@@ -134,6 +151,10 @@ export default function ExplodeScene() {
                 <button onClick={() => { GA.clickRetryBtn(); reset(); }} className="btn-neon w-full text-white"
                   style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 32px rgba(179,71,255,0.4)' }}>
                   또 날려버리기 🚀
+                </button>
+                <button onClick={() => router.push('/universe')}
+                  className="w-full py-3 rounded-2xl font-display font-semibold text-white/70 border border-white/10 hover:border-white/30 transition-all active:scale-95 text-sm">
+                  🌌 내 우주 보러가기
                 </button>
                 <p className="text-white/25 text-xs font-body">오늘도 잘 버텼어 👏</p>
                 <p className="text-white/15 text-xs font-mono mt-1">© 2026 박수민. All rights reserved.</p>

@@ -3,10 +3,12 @@
 import { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { useRouter } from 'next/navigation';
 import { GA } from '@/lib/analytics';
 
 export default function WriteScene() {
   const { text, setText, startShred } = useAppStore();
+  const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -138,6 +140,10 @@ export default function WriteScene() {
           적은 내용은 파쇄 후 우주로 사라져요 🚀
         </p>
 
+        <button onClick={() => router.push('/universe')}
+          className="text-white/20 text-xs font-mono hover:text-white/50 transition-colors">
+          🌌 내 우주 보러가기
+        </button>
         <p className="text-white/15 text-xs font-mono text-center">
           © 2026 박수민. All rights reserved.
         </p>
