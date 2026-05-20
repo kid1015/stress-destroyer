@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { AppState, AppScene, PaperShred } from '@/types';
 
 function generateShreds(text: string): PaperShred[] {
-  const count = 10;
+  const count = 6;
   const colors = ['#fafaf7', '#f5f0e8', '#e8e4dc', '#fef9e3', '#fce4e4'];
 
   return Array.from({ length: count }, (_, i) => ({

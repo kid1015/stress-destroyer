@@ -73,8 +73,9 @@ export default function CollectScene() {
               <motion.div
                 key={shred.id}
                 drag
-                dragConstraints={{ left: -200, right: 200, top: -100, bottom: 200 }}
-                dragElastic={0.2}
+                dragConstraints={{ left: -40, right: 40, top: -40, bottom: 300 }}
+                dragElastic={0}
+                dragMomentum={false}
                 onDragEnd={(_, info) => handleDragEnd(shred.id, info)}
                 whileDrag={{ scale: 1.3, zIndex: 50 }}
                 initial={{ opacity: 0, scale: 0 }}
