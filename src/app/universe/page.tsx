@@ -139,7 +139,7 @@ export default function UniversePage() {
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-4">
           <button onClick={handleBack} className="text-white/40 hover:text-white transition-colors text-sm font-mono">← 돌아가기</button>
-          <button onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
+          <button onClick={() => supabase.auth.signOut().then(() => { setScene('write'); router.push('/'); })}
             className="text-white/25 hover:text-white/50 transition-colors text-xs font-mono">로그아웃</button>
         </div>
 
@@ -315,8 +315,13 @@ function StarDot({ star, x, y, idx, color, streak, onClick }: {
 }) {
   const [hovered, setHovered] = useState(false);
 
+  function handleClick() {
+    GA.clickStarDetail(star.month, star.day);
+    onClick();
+  }
+
   return (
-    <motion.button onClick={onClick}
+    <motion.button onClick={handleClick}
       onHoverStart={() => setHovered(true)} onHoverEnd={() => setHovered(false)}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
