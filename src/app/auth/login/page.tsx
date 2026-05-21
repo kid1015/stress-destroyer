@@ -34,6 +34,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-void-950 flex items-center justify-center px-6">
       <div className="w-full max-w-sm space-y-6">
+        <button onClick={() => router.push('/')}
+          className="text-white/40 hover:text-white transition-colors text-sm font-mono">
+          ← 돌아가기
+        </button>
         <div className="text-center">
           <div className="text-5xl mb-3">🚀</div>
           <h1 className="text-2xl font-display font-bold text-white">로그인</h1>
