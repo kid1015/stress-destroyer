@@ -56,8 +56,8 @@ export default function WriteScene() {
             stress destroyer
           </p>
           <h1 className="text-3xl font-display font-bold text-white leading-tight">
-            지금 가장 힘든 게<br />
-            <span className="neon-text-pink">뭐야?</span>
+            오늘 쌓인 고민들<br />
+            <span className="neon-text-pink">우주로 날려버려!</span>
           </h1>
           <p className="text-white/40 text-sm font-body mt-3">
             다 적어. 여기선 아무도 안 봐.
