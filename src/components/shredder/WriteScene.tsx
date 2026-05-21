@@ -150,7 +150,7 @@ export default function WriteScene() {
           🗂 파쇄기에 넣기
         </motion.button>
 
-        <p className="text-white/20 text-xs font-body text-center">
+        <p className="text-white/70 text-sm font-body text-center">
           적은 내용은 파쇄 후 우주로 사라져요 🚀
         </p>
 

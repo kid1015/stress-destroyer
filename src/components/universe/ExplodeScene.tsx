@@ -107,69 +107,154 @@ export default function ExplodeScene() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const cx = canvas.width * 0.5;
-    const cy = canvas.height * 0.42;
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // 아이메시지 폭죽 스타일 — 여러 발사 지점에서 위→아래 레이저 쏟아짐
+    interface Rocket {
+      x: number;
+      startY: number;
+      color: string;
+      delay: number;
+      trails: Trail[];
+      exploded: boolean;
+      explodeY: number;
+    }
+    interface Trail {
+      angle: number;
+      length: number;
+      speed: number;
+      dist: number;
+      color: string;
+    }
+
+    const rockets: Rocket[] = [
+      { x: W * 0.25, startY: H, explodeY: H * 0.25, color: '#ff2d78', delay: 0, trails: [], exploded: false },
+      { x: W * 0.5,  startY: H, explodeY: H * 0.20, color: '#b347ff', delay: 8, trails: [], exploded: false },
+      { x: W * 0.75, startY: H, explodeY: H * 0.30, color: '#3d9eff', delay: 16, trails: [], exploded: false },
+      { x: W * 0.38, startY: H, explodeY: H * 0.35, color: '#00e5b0', delay: 24, trails: [], exploded: false },
+      { x: W * 0.62, startY: H, explodeY: H * 0.22, color: '#ffe033', delay: 32, trails: [], exploded: false },
+    ];
+
+    // 각 폭발마다 레이저 트레일 생성
+    rockets.forEach(r => {
+      const count = 36;
+      r.trails = Array.from({ length: count }, (_, i) => ({
+        angle: (i / count) * Math.PI * 2,
+        length: 60 + Math.random() * 100,
+        speed: 4 + Math.random() * 4,
+        dist: 0,
+        color: [r.color, '#ffffff', LASER_COLORS[Math.floor(Math.random() * LASER_COLORS.length)]][Math.floor(Math.random() * 3)],
+      }));
+    });
+
     let frame = 0;
-    const maxFrames = 50;
+    const rocketSpeed = 18;
+
+    // 로켓 현재 Y 추적
+    const rocketY: number[] = rockets.map(r => r.startY);
 
     function animate() {
-      if (frame >= maxFrames) {
-        ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
-        return;
-      }
-      ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
+      ctx!.clearRect(0, 0, W, H);
 
-      const progress = frame / maxFrames;
+      let allDone = true;
 
-      // 여러 파티클 그리기
-      for (let i = 0; i < 48; i++) {
-        const angle = (i / 48) * Math.PI * 2;
-        const dist = progress * (150 + (i % 5) * 40);
-        const x2 = cx + Math.cos(angle) * dist;
-        const y2 = cy + Math.sin(angle) * dist;
-        const x1 = cx + Math.cos(angle) * Math.max(0, dist - 80);
-        const y1 = cy + Math.sin(angle) * Math.max(0, dist - 80);
+      rockets.forEach((r, ri) => {
+        if (frame < r.delay) { allDone = false; return; }
 
-        const color = LASER_COLORS[i % LASER_COLORS.length];
-        const alpha = Math.max(0, 1 - progress * 1.2);
+        const localFrame = frame - r.delay;
 
-        const grad = ctx!.createLinearGradient(x1, y1, x2, y2);
-        grad.addColorStop(0, `${color}00`);
-        grad.addColorStop(1, `${color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`);
+        if (!r.exploded) {
+          allDone = false;
+          // 로켓 상승
+          rocketY[ri] = r.startY - localFrame * rocketSpeed;
 
-        ctx!.beginPath();
-        ctx!.moveTo(x1, y1);
-        ctx!.lineTo(x2, y2);
-        ctx!.strokeStyle = grad;
-        ctx!.lineWidth = 2.5;
-        ctx!.shadowColor = color;
-        ctx!.shadowBlur = 12;
-        ctx!.stroke();
+          if (rocketY[ri] <= r.explodeY) {
+            r.exploded = true;
+          }
 
-        // 끝점 빛나는 점
-        ctx!.beginPath();
-        ctx!.arc(x2, y2, 3, 0, Math.PI * 2);
-        ctx!.fillStyle = `${color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`;
-        ctx!.shadowBlur = 20;
-        ctx!.fill();
-      }
+          // 로켓 그리기 (밝은 점 + 꼬리)
+          const ry = Math.max(rocketY[ri], r.explodeY);
+          const grad = ctx!.createLinearGradient(r.x, ry + 20, r.x, ry);
+          grad.addColorStop(0, `${r.color}00`);
+          grad.addColorStop(1, r.color);
+          ctx!.beginPath();
+          ctx!.moveTo(r.x, ry + 20);
+          ctx!.lineTo(r.x, ry);
+          ctx!.strokeStyle = grad;
+          ctx!.lineWidth = 2;
+          ctx!.shadowColor = r.color;
+          ctx!.shadowBlur = 10;
+          ctx!.stroke();
 
-      // 중심 폭발 플래시
-      if (progress < 0.3) {
-        const flashAlpha = (0.3 - progress) / 0.3;
-        const radGrad = ctx!.createRadialGradient(cx, cy, 0, cx, cy, 80 * progress + 20);
-        radGrad.addColorStop(0, `rgba(255,255,255,${flashAlpha * 0.9})`);
-        radGrad.addColorStop(0.5, `rgba(255,45,120,${flashAlpha * 0.5})`);
-        radGrad.addColorStop(1, `rgba(179,71,255,0)`);
-        ctx!.beginPath();
-        ctx!.arc(cx, cy, 80 * progress + 20, 0, Math.PI * 2);
-        ctx!.fillStyle = radGrad;
-        ctx!.shadowBlur = 0;
-        ctx!.fill();
-      }
+          ctx!.beginPath();
+          ctx!.arc(r.x, ry, 3, 0, Math.PI * 2);
+          ctx!.fillStyle = '#ffffff';
+          ctx!.shadowBlur = 16;
+          ctx!.fill();
+        } else {
+          // 폭발 레이저 트레일
+          const explodeFrame = localFrame - Math.ceil((r.startY - r.explodeY) / rocketSpeed);
+          const maxExplodeFrames = 40;
+
+          if (explodeFrame <= maxExplodeFrames) {
+            allDone = false;
+
+            // 폭발 플래시
+            if (explodeFrame < 6) {
+              const flashAlpha = (6 - explodeFrame) / 6 * 0.85;
+              const rg = ctx!.createRadialGradient(r.x, r.explodeY, 0, r.x, r.explodeY, 50);
+              rg.addColorStop(0, `rgba(255,255,255,${flashAlpha})`);
+              rg.addColorStop(0.5, `${r.color}${Math.floor(flashAlpha * 0.6 * 255).toString(16).padStart(2,'0')}`);
+              rg.addColorStop(1, `${r.color}00`);
+              ctx!.beginPath();
+              ctx!.arc(r.x, r.explodeY, 50, 0, Math.PI * 2);
+              ctx!.fillStyle = rg;
+              ctx!.shadowBlur = 0;
+              ctx!.fill();
+            }
+
+            // 레이저 트레일
+            r.trails.forEach(t => {
+              t.dist = Math.min(t.dist + t.speed, t.length);
+              const progress = explodeFrame / maxExplodeFrames;
+              const alpha = Math.max(0, 1 - progress * 1.3);
+
+              const x2 = r.x + Math.cos(t.angle) * t.dist;
+              const y2 = r.explodeY + Math.sin(t.angle) * t.dist;
+              const x1 = r.x + Math.cos(t.angle) * Math.max(0, t.dist - 45);
+              const y1 = r.explodeY + Math.sin(t.angle) * Math.max(0, t.dist - 45);
+
+              const lg = ctx!.createLinearGradient(x1, y1, x2, y2);
+              lg.addColorStop(0, `${t.color}00`);
+              lg.addColorStop(1, `${t.color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`);
+
+              ctx!.beginPath();
+              ctx!.moveTo(x1, y1);
+              ctx!.lineTo(x2, y2);
+              ctx!.strokeStyle = lg;
+              ctx!.lineWidth = 2.5;
+              ctx!.shadowColor = t.color;
+              ctx!.shadowBlur = 14;
+              ctx!.stroke();
+
+              // 끝점 빛나는 점
+              ctx!.beginPath();
+              ctx!.arc(x2, y2, 2.5, 0, Math.PI * 2);
+              ctx!.fillStyle = `${t.color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`;
+              ctx!.shadowBlur = 18;
+              ctx!.fill();
+            });
+          }
+        }
+      });
 
       frame++;
-      animFrameRef.current = requestAnimationFrame(animate);
+      if (!allDone || frame < 160) {
+        animFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        ctx!.clearRect(0, 0, W, H);
+      }
     }
 
     animate();
