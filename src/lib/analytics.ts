@@ -27,4 +27,17 @@ export const GA = {
   clickDragTrash: () => trackEvent('click_drag_trash_to_rocket', { button: '쓰레기통 우주선으로 드래그' }),
   clickLaunchBtn: () => trackEvent('click_launch_btn', { button: '발사 CTA' }),
   clickRetryBtn: () => trackEvent('click_retry_btn', { button: '또 날려버리기 CTA' }),
+
+  // 로그인/회원가입
+  viewLogin: () => trackEvent('view_login', { page: '로그인 페이지 진입' }),
+  viewSignup: () => trackEvent('view_signup', { page: '회원가입 페이지 진입' }),
+  completeLogin: () => trackEvent('complete_login', { action: '로그인 완료' }),
+  completeSignup: () => trackEvent('complete_signup', { action: '회원가입 완료' }),
+  clickLoginBtn: () => trackEvent('click_login_cta', { button: '로그인하고 내 우주 만들기 CTA' }),
+
+  // 나의 우주
+  viewUniverse: (totalStars: number, level: number) => trackEvent('view_universe', { total_stars: totalStars, universe_level: level }),
+  clickUniverseBtn: () => trackEvent('click_universe_btn', { button: '내 우주 보러가기 CTA' }),
+  clickStarDetail: (month: number, day: number) => trackEvent('click_star_detail', { month, day }),
+  starCreated: (totalStars: number) => trackEvent('star_created', { total_stars: totalStars }),
 };

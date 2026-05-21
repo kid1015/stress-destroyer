@@ -156,12 +156,13 @@ export default function WriteScene() {
 
         {userInfo ? (
           <button onClick={() => router.push('/universe')}
+            onClick={() => GA.clickUniverseBtn()}
             className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white transition-all active:scale-95 flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 20px rgba(179,71,255,0.3)' }}>
             🌌 내 우주 보러가기 · ✦ {userInfo.starCount}개
           </button>
         ) : (
-          <button onClick={() => router.push('/auth/login')}
+          <button onClick={() => { GA.clickLoginBtn(); router.push('/auth/login'); }}
             className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white transition-all active:scale-95"
             style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 20px rgba(179,71,255,0.3)' }}>
             🔐 로그인하고 내 우주 만들기

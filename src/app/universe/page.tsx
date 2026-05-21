@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useAppStore } from '@/lib/store';
+import { GA } from '@/lib/analytics';
 
 interface Star {
   id: string;
@@ -78,7 +79,11 @@ export default function UniversePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/auth/login'); return; }
       const { data } = await supabase.from('stars').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
-      if (data) setStars(data);
+      if (data) {
+        setStars(data);
+        const level = getUniverseLevel(data.length).level;
+        GA.viewUniverse(data.length, level);
+      }
       setLoading(false);
     }
     init();
