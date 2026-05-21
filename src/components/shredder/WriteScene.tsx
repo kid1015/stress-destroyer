@@ -59,8 +59,8 @@ export default function WriteScene() {
             오늘 쌓인 고민들<br />
             <span className="neon-text-pink">우주로 날려버려!</span>
           </h1>
-          <p className="text-white/40 text-sm font-body mt-3">
-            다 적어. 여기선 아무도 안 봐.
+         <p className="text-white/70 text-sm font-body text-center">
+          적은 내용은 파쇄 후 우주로 사라져요 🚀
           </p>
         </motion.div>
 
@@ -150,8 +150,7 @@ export default function WriteScene() {
           🗂 파쇄기에 넣기
         </motion.button>
 
-        <p className="text-white/70 text-sm font-body text-center">
-          적은 내용은 파쇄 후 우주로 사라져요 🚀
+        
         </p>
 
         {userInfo ? (
