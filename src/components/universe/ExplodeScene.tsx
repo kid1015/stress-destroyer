@@ -6,8 +6,8 @@ import { useAppStore } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { GA } from '@/lib/analytics';
-import { useSoundEffects } from '@/hooks/useSoundEffects';
 import confetti from 'canvas-confetti';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 type Phase = 'ascend' | 'flying' | 'explode' | 'celebrate';
 
@@ -22,20 +22,22 @@ export default function ExplodeScene() {
   const { reset, setScene } = useAppStore();
   const supabase = createClient();
   const router = useRouter();
-  const { play } = useSoundEffects();
   const [phase, setPhase] = useState<Phase>('ascend');
   const [particles, setParticles] = useState<Particle[]>([]);
+  const { play } = useSoundEffects();
 
   useEffect(() => {
     GA.sceneExplode();
-
     const t1 = setTimeout(() => setPhase('flying'), 2200);
-    const t2 = setTimeout(async () => {
+    const t2 = setTimeout(() => {
       setPhase('explode');
       play('explode');
       triggerConfetti();
       spawnParticles();
-
+    }, 4200);
+    const t3 = setTimeout(async () => {
+      setPhase('celebrate');
+      // 별 저장
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const now = new Date();
@@ -45,13 +47,10 @@ export default function ExplodeScene() {
           month: now.getMonth() + 1,
           day: now.getDate(),
         });
-        const { count } = await supabase.from('stars').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
-        GA.starCreated(count || 0);
       }
-    }, 4200);
-    const t3 = setTimeout(() => setPhase('celebrate'), 5200);
+    }, 5200);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, []);
+  }, [play]);
 
   function triggerConfetti() {
     const colors = ['#ff2d78', '#b347ff', '#3d9eff', '#00e5b0', '#ffe033', '#ff6b2d'];
@@ -88,7 +87,6 @@ export default function ExplodeScene() {
         <div style={{ position: 'absolute', bottom: '20%', left: '3%', width: '180px', height: '180px', background: 'radial-gradient(circle, rgba(61,158,255,0.06) 0%, transparent 70%)', borderRadius: '50%' }} />
       </div>
 
-      {/* 우주선 */}
       <AnimatePresence>
         {phase !== 'celebrate' && phase !== 'explode' && (
           <motion.div
@@ -110,7 +108,6 @@ export default function ExplodeScene() {
         )}
       </AnimatePresence>
 
-      {/* 폭발 플래시 */}
       <AnimatePresence>
         {phase === 'explode' && (
           <motion.div className="fixed inset-0 pointer-events-none z-50"
@@ -119,7 +116,6 @@ export default function ExplodeScene() {
         )}
       </AnimatePresence>
 
-      {/* 이모지 파티클 */}
       {particles.map((p) => (
         <motion.div key={p.id} className="absolute pointer-events-none z-30"
           style={{ left: `${p.x}%`, top: `${p.y}%`, fontSize: p.size }}
@@ -130,7 +126,6 @@ export default function ExplodeScene() {
         </motion.div>
       ))}
 
-      {/* 축하 메시지 */}
       <AnimatePresence>
         {phase === 'celebrate' && (
           <motion.div className="absolute inset-0 flex flex-col items-center justify-center z-20 px-6"
@@ -146,7 +141,7 @@ export default function ExplodeScene() {
               <div>
                 <h2 className="text-4xl font-display font-bold text-white mb-3">사라졌어!</h2>
                 <p className="text-white/55 font-body text-lg leading-relaxed">
-                  그 고민들,<br />
+                  그 나쁜 기억들,<br />
                   <span style={{ color: '#ff2d78', fontWeight: 600 }}>우주 끝으로 날아가버렸어.</span><br />
                   이제 없어. 진짜로.
                 </p>
@@ -162,7 +157,7 @@ export default function ExplodeScene() {
                   🌌 내 우주 보러가기
                 </button>
                 <p className="text-white/25 text-xs font-body">오늘도 잘 버텼어 👏</p>
-                <p className="text-white/15 text-xs font-mono">© 2026 박수민. All rights reserved.</p>
+                <p className="text-white/15 text-xs font-mono mt-1">© 2026 박수민. All rights reserved.</p>
               </motion.div>
             </motion.div>
           </motion.div>
