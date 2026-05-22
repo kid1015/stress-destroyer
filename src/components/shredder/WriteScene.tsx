@@ -12,7 +12,8 @@ export default function WriteScene() {
   const router = useRouter();
   const supabase = createClient();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [userInfo, setUserInfo] = useState<{ email: string; starCount: number } | null>(null);
+  const [starCount, setStarCount] = useState<number>(0);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -20,14 +21,26 @@ export default function WriteScene() {
   }, []);
 
   useEffect(() => {
-    async function fetchUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { count } = await supabase.from('stars').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
-        setUserInfo({ email: user.email || '', starCount: count || 0 });
+    async function init() {
+      let { data: { user } } = await supabase.auth.getUser();
+
+      // 로그인 안 돼있으면 익명 로그인 자동 실행
+      if (!user) {
+        const { data } = await supabase.auth.signInAnonymously();
+        user = data.user;
       }
+
+      if (user) {
+        const { count } = await supabase
+          .from('stars')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        setStarCount(count || 0);
+      }
+
+      setReady(true);
     }
-    fetchUser();
+    init();
   }, []);
 
   const handleShred = () => {
@@ -128,17 +141,13 @@ export default function WriteScene() {
           🗂 파쇄기에 넣기
         </motion.button>
 
-        {userInfo ? (
-          <button onClick={() => { GA.clickUniverseBtn(); router.push('/universe'); }}
+        {ready && (
+          <button
+            onClick={() => { GA.clickUniverseBtn(); router.push('/universe'); }}
             className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white transition-all active:scale-95 flex items-center justify-center gap-2"
-            style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 20px rgba(179,71,255,0.3)' }}>
-            🌌 내 우주 보러가기 · ✦ {userInfo.starCount}개
-          </button>
-        ) : (
-          <button onClick={() => { GA.clickLoginBtn(); router.push('/auth/login'); }}
-            className="w-full py-3 rounded-2xl text-sm font-display font-semibold text-white transition-all active:scale-95"
-            style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 20px rgba(179,71,255,0.3)' }}>
-            🔐 로그인하고 내 우주 만들기
+            style={{ background: 'linear-gradient(135deg, #b347ff, #3d9eff)', boxShadow: '0 0 20px rgba(179,71,255,0.3)' }}
+          >
+            🌌 내 우주 보러가기 · ✦ {starCount}개
           </button>
         )}
 
