@@ -66,7 +66,7 @@ function getStarPos(day: number, month: number, idx: number) {
 export default function UniversePage() {
   const router = useRouter();
   const supabase = createClient();
-  const { setScene } = useAppStore();
+  const { setScene, setText } = useAppStore();
   const [stars, setStars] = useState<Star[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStar, setSelectedStar] = useState<Star | null>(null);
@@ -104,6 +104,7 @@ export default function UniversePage() {
   }
 
   function handleBack() {
+    setText('');
     setScene('write');
     router.push('/');
   }
