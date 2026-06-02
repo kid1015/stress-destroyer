@@ -20,9 +20,9 @@ const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9�
 // 우주 성장 단계
 function getUniverseLevel(total: number) {
   if (total >= 20) return { level: 4, name: '풀 갤럭시', emoji: '🎆' };
-  if (total >= 13) return { level: 3, name: '은하수 형성', emoji: '💫' };
-  if (total >= 7)  return { level: 2, name: '성운 등장', emoji: '🌌' };
-  if (total >= 3)  return { level: 1, name: '별이 생기기 시작', emoji: '🌟' };
+  if (total >= 15) return { level: 3, name: '은하수 형성', emoji: '💫' };
+  if (total >= 10) return { level: 2, name: '성운 등장', emoji: '🌌' };
+  if (total >= 5)  return { level: 1, name: '별이 생기기 시작', emoji: '🌟' };
   return { level: 0, name: '텅 빈 우주', emoji: '🌑' };
 }
 
@@ -56,10 +56,10 @@ function getStarColor(streak: number, idx: number) {
 // 별 위치 (우주 느낌)
 function getStarPos(day: number, month: number, idx: number) {
   const angle = (idx / 20) * Math.PI * 2 + (day * 0.7);
-  const r = 18 + (idx % 5) * 8 + (day % 4) * 3;
+  const r = 12 + (idx % 5) * 5 + (day % 4) * 2;
   return {
-    x: 50 + Math.cos(angle) * r * 1.1,
-    y: 50 + Math.sin(angle) * r * 0.75,
+    x: Math.min(85, Math.max(15, 50 + Math.cos(angle) * r * 0.7)),
+    y: Math.min(85, Math.max(15, 50 + Math.sin(angle) * r * 0.6)),
   };
 }
 
