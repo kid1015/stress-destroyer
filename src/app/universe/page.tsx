@@ -139,8 +139,12 @@ export default function UniversePage() {
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-4">
           <button onClick={handleBack} className="text-white/40 hover:text-white transition-colors text-sm font-mono">← 돌아가기</button>
-          <button onClick={() => supabase.auth.signOut().then(() => { setScene('write'); router.push('/'); })}
-            className="text-white/25 hover:text-white/50 transition-colors text-xs font-mono">로그아웃</button>
+          <button onClick={() => {
+  if (window.confirm('로그아웃하면 내 우주 기록이 모두 사라져요. 계속할까요?')) {
+    supabase.auth.signOut().then(() => { setScene('write'); router.push('/'); });
+  }
+}}
+  className="text-white/25 hover:text-white/50 transition-colors text-xs font-mono">로그아웃</button>
         </div>
 
         {/* 우주 레벨 + 타이틀 */}
