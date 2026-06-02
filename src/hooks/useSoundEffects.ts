@@ -1,18 +1,23 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
+
+// 전역 AudioContext — 컴포넌트마다 새로 만들지 않음
+let globalCtx: AudioContext | null = null;
+
+function getCtx(): AudioContext {
+  if (!globalCtx || globalCtx.state === 'closed') {
+    globalCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  // suspended 상태면 resume
+  if (globalCtx.state === 'suspended') {
+    globalCtx.resume();
+  }
+  return globalCtx;
+}
 
 export function useSoundEffects() {
-  const ctxRef = useRef<AudioContext | null>(null);
 
-  function getCtx(): AudioContext {
-    if (!ctxRef.current) {
-      ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    return ctxRef.current;
-  }
-
-  // 파지지직
   const playShred = useCallback(() => {
     try {
       const ctx = getCtx();
@@ -44,7 +49,6 @@ export function useSoundEffects() {
     } catch {}
   }, []);
 
-  // 스르륵
   const playDrop = useCallback(() => {
     try {
       const ctx = getCtx();
@@ -69,7 +73,6 @@ export function useSoundEffects() {
     } catch {}
   }, []);
 
-  // 발사
   const playLaunch = useCallback(() => {
     try {
       const ctx = getCtx();
@@ -102,11 +105,9 @@ export function useSoundEffects() {
     } catch {}
   }, []);
 
-  // 강렬한 폭발음
   const playExplode = useCallback(() => {
     try {
       const ctx = getCtx();
-
       const compressor = ctx.createDynamicsCompressor();
       compressor.threshold.value = -3;
       compressor.knee.value = 2;
@@ -115,109 +116,60 @@ export function useSoundEffects() {
       compressor.release.value = 0.05;
       compressor.connect(ctx.destination);
 
-      // 쿵 — 초저음 임팩트
       const boom = (delay: number, vol: number) => {
         const dur = 1.8;
         const len = Math.floor(ctx.sampleRate * dur);
         const buf = ctx.createBuffer(1, len, ctx.sampleRate);
         const d = buf.getChannelData(0);
-        for (let i = 0; i < len; i++) {
-          const t = i / ctx.sampleRate;
-          d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 4);
-        }
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-
-        const sub = ctx.createBiquadFilter();
-        sub.type = 'lowpass';
-        sub.frequency.value = 80;
-        const subG = ctx.createGain();
-        subG.gain.setValueAtTime(vol * 1.8, ctx.currentTime + delay);
-        subG.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
-
-        const body = ctx.createBiquadFilter();
-        body.type = 'bandpass';
-        body.frequency.value = 300;
-        body.Q.value = 0.3;
-        const bodyG = ctx.createGain();
-        bodyG.gain.setValueAtTime(vol * 1.2, ctx.currentTime + delay);
-        bodyG.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur * 0.5);
-
-        const src2 = ctx.createBufferSource();
-        src2.buffer = buf;
-
+        for (let i = 0; i < len; i++) { const t = i / ctx.sampleRate; d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 4); }
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        const sub = ctx.createBiquadFilter(); sub.type = 'lowpass'; sub.frequency.value = 80;
+        const subG = ctx.createGain(); subG.gain.setValueAtTime(vol * 1.8, ctx.currentTime + delay); subG.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+        const body = ctx.createBiquadFilter(); body.type = 'bandpass'; body.frequency.value = 300; body.Q.value = 0.3;
+        const bodyG = ctx.createGain(); bodyG.gain.setValueAtTime(vol * 1.2, ctx.currentTime + delay); bodyG.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur * 0.5);
+        const src2 = ctx.createBufferSource(); src2.buffer = buf;
         src.connect(sub); sub.connect(subG); subG.connect(compressor);
         src2.connect(body); body.connect(bodyG); bodyG.connect(compressor);
         src.start(ctx.currentTime + delay); src.stop(ctx.currentTime + delay + dur);
         src2.start(ctx.currentTime + delay); src2.stop(ctx.currentTime + delay + dur);
-      }
+      };
 
-      // 파직 — 고음 임팩트 크래클
       const crack = (delay: number, vol: number) => {
         const dur = 0.08;
         const len = Math.floor(ctx.sampleRate * dur);
         const buf = ctx.createBuffer(1, len, ctx.sampleRate);
         const d = buf.getChannelData(0);
-        for (let i = 0; i < len; i++) {
-          d[i] = (Math.random() * 2 - 1) * Math.exp(-i / len * 8);
-        }
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-        const f = ctx.createBiquadFilter();
-        f.type = 'highpass';
-        f.frequency.value = 1500;
-        f.Q.value = 0.1;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(vol, ctx.currentTime + delay);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+        for (let i = 0; i < len; i++) { d[i] = (Math.random() * 2 - 1) * Math.exp(-i / len * 8); }
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1500; f.Q.value = 0.1;
+        const g = ctx.createGain(); g.gain.setValueAtTime(vol, ctx.currentTime + delay); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
         src.connect(f); f.connect(g); g.connect(compressor);
-        src.start(ctx.currentTime + delay);
-        src.stop(ctx.currentTime + delay + dur);
-      }
+        src.start(ctx.currentTime + delay); src.stop(ctx.currentTime + delay + dur);
+      };
 
-      // 쉬이익 — 압력 방출
       const hiss = (delay: number) => {
         const dur = 1.2;
         const len = Math.floor(ctx.sampleRate * dur);
         const buf = ctx.createBuffer(1, len, ctx.sampleRate);
         const d = buf.getChannelData(0);
         for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-        const f = ctx.createBiquadFilter();
-        f.type = 'bandpass';
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        const f = ctx.createBiquadFilter(); f.type = 'bandpass';
         f.frequency.setValueAtTime(2000, ctx.currentTime + delay);
         f.frequency.exponentialRampToValueAtTime(8000, ctx.currentTime + delay + dur);
         f.Q.value = 0.5;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0.18, ctx.currentTime + delay);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.18, ctx.currentTime + delay); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
         src.connect(f); f.connect(g); g.connect(compressor);
-        src.start(ctx.currentTime + delay);
-        src.stop(ctx.currentTime + delay + dur);
-      }
+        src.start(ctx.currentTime + delay); src.stop(ctx.currentTime + delay + dur);
+      };
 
-      // 3연발 펑펑펑
-      boom(0.0, 1.0);
-      crack(0.0, 1.2); crack(0.02, 0.9); crack(0.04, 1.0);
-      hiss(0.05);
-
-      boom(0.28, 0.9);
-      crack(0.28, 1.0); crack(0.30, 0.8); crack(0.32, 0.9);
-      hiss(0.32);
-
-      boom(0.58, 1.0);
-      crack(0.58, 1.1); crack(0.60, 0.9); crack(0.62, 1.0); crack(0.65, 0.8);
-      hiss(0.62);
-
-      // 마무리 잔향
-      boom(0.9, 0.4);
-      crack(0.9, 0.6); crack(0.95, 0.5); crack(1.0, 0.4);
-
+      boom(0.0, 1.0); crack(0.0, 1.2); crack(0.02, 0.9); crack(0.04, 1.0); hiss(0.05);
+      boom(0.28, 0.9); crack(0.28, 1.0); crack(0.30, 0.8); crack(0.32, 0.9); hiss(0.32);
+      boom(0.58, 1.0); crack(0.58, 1.1); crack(0.60, 0.9); crack(0.62, 1.0); crack(0.65, 0.8); hiss(0.62);
+      boom(0.9, 0.4); crack(0.9, 0.6); crack(0.95, 0.5); crack(1.0, 0.4);
     } catch {}
   }, []);
 
-  // 완료
   const playComplete = useCallback(() => {
     try {
       const ctx = getCtx();
