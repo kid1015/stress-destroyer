@@ -24,10 +24,32 @@ export default function WriteScene() {
     async function init() {
       let { data: { user } } = await supabase.auth.getUser();
 
-      // 로그인 안 돼있으면 익명 로그인 자동 실행
+      // 로그인 안 돼있으면 익명 로그인
       if (!user) {
-        const { data } = await supabase.auth.signInAnonymously();
-        user = data.user;
+        // 로컬스토리지에 저장된 세션 있으면 복원 시도
+        const savedSession = localStorage.getItem('anon_session');
+        if (savedSession) {
+          try {
+            const { access_token, refresh_token } = JSON.parse(savedSession);
+            await supabase.auth.setSession({ access_token, refresh_token });
+            const { data: { user: restoredUser } } = await supabase.auth.getUser();
+            user = restoredUser;
+          } catch {}
+        }
+
+        // 그래도 없으면 새 익명 계정 생성
+        if (!user) {
+          const { data } = await supabase.auth.signInAnonymously();
+          user = data.user;
+          // 세션 로컬스토리지에 저장
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            localStorage.setItem('anon_session', JSON.stringify({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+            }));
+          }
+        }
       }
 
       if (user) {
